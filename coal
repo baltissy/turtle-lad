@@ -1,7 +1,8 @@
 local INVENTORY_THRESHOLD = 16
+local STACK_TARGET = 64
 local steps = 0
 
--- Trash blocks (vanilla + modded)
+-- Trash blocks (vanilla + common modded)
 local trashBlocks = {
     ["minecraft:cobblestone"]=true,
     ["minecraft:dirt"]=true,
@@ -9,11 +10,11 @@ local trashBlocks = {
     ["minecraft:gravel"]=true,
     ["minecraft:stone"]=true,
     ["minecraft:marble"]=true,
-    ["modname:cobbedstone"]=true,
-    ["modname:granite"]=true
+    ["appliedenergistics2:crushed_stone"]=true,
+    ["thermal:cobblestone_variant"]=true
 }
 
--- Dump trash if inventory is mostly full
+-- Dump all trash in inventory
 function dumpTrash()
     for i=1,16 do
         turtle.select(i)
@@ -24,32 +25,30 @@ function dumpTrash()
     end
 end
 
--- Deposit exactly 1 stack of coal and return
+-- Deposit 1 full stack of coal and reset orientation
 function depositCoal()
     turtle.turnLeft()
     turtle.turnLeft()
     for i=1,16 do
         turtle.select(i)
         local item = turtle.getItemDetail()
-        if item and item.name == "minecraft:coal" then
-            if item.count >= 64 then
-                turtle.drop(64)
-                break
-            end
+        if item and item.name == "minecraft:coal" and item.count >= STACK_TARGET then
+            turtle.drop(STACK_TARGET)
+            break
         end
     end
     turtle.turnLeft()
     turtle.turnLeft()
 end
 
--- Move forward safely and dig blocks
+-- Move forward safely, dig obstacles
 function safeForward()
     while turtle.detect() do turtle.dig() end
     turtle.forward()
     steps = steps + 1
 end
 
--- Mine in 2x2 tunnels for given length
+-- Mine in 2x2 tunnel, return true if stack collected
 function mine2x2(length)
     for l=1,length do
         for i=1,2 do
@@ -57,10 +56,10 @@ function mine2x2(length)
             turtle.digDown()
             safeForward()
             dumpTrash()
-            -- Check if we have a full stack of coal
+            -- Check for full coal stack
             for s=1,16 do
                 local item = turtle.getItemDetail(s)
-                if item and item.name == "minecraft:coal" and item.count >= 64 then
+                if item and item.name == "minecraft:coal" and item.count >= STACK_TARGET then
                     return true
                 end
             end
@@ -74,7 +73,7 @@ function mine2x2(length)
     return false
 end
 
--- Return to base using steps
+-- Return home using steps
 function goHome()
     turtle.turnLeft()
     turtle.turnLeft()
@@ -84,9 +83,9 @@ function goHome()
     steps = 0
 end
 
--- Main loop
+-- Main mining loop
 while true do
-    local fullStack = mine2x2(5)
+    local fullStack = mine2x2(10)  -- Mine 10 iterations per run
     if fullStack then
         goHome()
         depositCoal()
