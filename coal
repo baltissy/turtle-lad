@@ -1,0 +1,77 @@
+local INVENTORY_THRESHOLD = 16
+local steps = 0
+
+-- Trash blocks (modded + vanilla)
+local trashBlocks = {
+    ["minecraft:cobblestone"]=true,
+    ["minecraft:dirt"]=true,
+    ["minecraft:sand"]=true,
+    ["minecraft:gravel"]=true,
+    ["minecraft:stone"]=true,
+    ["minecraft:marble"]=true,
+    ["modname:cobbedstone"]=true,
+    ["modname:granite"]=true
+}
+
+function dumpTrash()
+    local fullSlots = 0
+    for i=1,16 do
+        if turtle.getItemDetail(i) then fullSlots = fullSlots + 1 end
+    end
+    if fullSlots >= INVENTORY_THRESHOLD then
+        for i=1,16 do
+            turtle.select(i)
+            local item = turtle.getItemDetail()
+            if item and trashBlocks[item.name] then turtle.drop() end
+        end
+    end
+end
+
+function depositCoal()
+    turtle.turnLeft()
+    turtle.turnLeft()
+    for i=1,16 do
+        turtle.select(i)
+        local item = turtle.getItemDetail()
+        if item and item.name == "minecraft:coal" then turtle.drop(64) end
+    end
+    turtle.turnLeft()
+    turtle.turnLeft()
+end
+
+function safeForward()
+    while turtle.detect() do turtle.dig() end
+    turtle.forward()
+    steps = steps + 1
+end
+
+function mine2x2(length)
+    for l=1,length do
+        for i=1,2 do
+            turtle.digUp()
+            turtle.digDown()
+            safeForward()
+            dumpTrash()
+            depositCoal()
+        end
+        turtle.turnRight()
+        turtle.digUp()
+        turtle.digDown()
+        safeForward()
+        turtle.turnLeft()
+    end
+end
+
+function goHome()
+    turtle.turnLeft()
+    turtle.turnLeft()
+    for i=1,steps do turtle.forward() end
+    turtle.turnLeft()
+    turtle.turnLeft()
+end
+
+-- Main
+while true do
+    mine2x2(5)
+    depositCoal()
+end
